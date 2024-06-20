@@ -49,7 +49,7 @@ class Upsampling2D(pooling_2d.Pooling2D):
                 w, self.kw, self.sx, self.pw, cover_all=self.cover_all)
 
         up_y = numpy.zeros((n, c, self.outh, self.outw), dtype=self._in_dtype)
-        up_y = conv.im2col_cpu(
+        up_y = conv.im2col(
             up_y, self.kh, self.kw, self.sy, self.sx, self.ph, self.pw,
             cover_all=self.cover_all).transpose(0, 1, 4, 5, 2, 3)
         colh, colw = up_y.shape[2:4]
@@ -74,7 +74,7 @@ class Upsampling2D(pooling_2d.Pooling2D):
             self.outw = conv.get_deconv_outsize(
                 w, self.kw, self.sx, self.pw, cover_all=self.cover_all)
         up_y = xp.zeros((n, c, self.outh, self.outw), dtype=self._in_dtype)
-        up_y = conv.im2col_gpu(
+        up_y = conv.im2col(
             up_y, self.kh, self.kw, self.sy, self.sx, self.ph, self.pw,
             cover_all=self.cover_all)
         up_y = up_y.transpose(0, 1, 4, 5, 2, 3)
@@ -120,7 +120,7 @@ class Upsampling2DGrad(function_node.FunctionNode):
         self._in_dtype = upsampling2d._in_dtype
 
     def forward_cpu(self, gy):
-        gcol = conv.im2col_cpu(
+        gcol = conv.im2col(
             gy[0], self.kh, self.kw, self.sy, self.sx, self.ph, self.pw,
             cover_all=self.cover_all)
         n, c, kh, kw, out_h, out_w = gcol.shape
@@ -131,7 +131,7 @@ class Upsampling2DGrad(function_node.FunctionNode):
 
     def forward_gpu(self, gy):
         xp = cuda.cupy
-        gcol = conv.im2col_gpu(
+        gcol = conv.im2col(
             gy[0], self.kh, self.kw, self.sy, self.sx, self.ph, self.pw,
             cover_all=self.cover_all)
 

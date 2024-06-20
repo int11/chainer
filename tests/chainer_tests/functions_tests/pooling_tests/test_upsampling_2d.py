@@ -38,12 +38,7 @@ class TestUpsampling2D(unittest.TestCase):
         y = F.upsampling_2d(
             self.pooled_y, self.indices, ksize=self.ksize,
             stride=self.stride, outsize=self.in_shape[2:])
-        if isinstance(y.array, numpy.ndarray):
-            y = conv.im2col_cpu(
-                y.array, self.ksize, self.ksize, self.stride, self.stride,
-                0, 0)
-        else:
-            y = conv.im2col_gpu(
+        conv.im2col(
                 y.array, self.ksize, self.ksize, self.stride, self.stride,
                 0, 0)
         for i in numpy.ndindex(y.shape):

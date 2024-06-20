@@ -1,6 +1,6 @@
 import numpy
 import six
-
+from chainer import backend
 from chainer.backends import cuda
 
 
@@ -62,9 +62,10 @@ def get_deconv_outsize(size, k, s, p, cover_all=False, d=1):
         return s * (size - 1) + dk - 2 * p
 
 
-def im2col_cpu(
-        img, kh, kw, sy, sx, ph, pw, pval=0, cover_all=False, dy=1, dx=1,
-        out_h=None, out_w=None):
+def im2col(img, kh, kw, sy, sx, ph, pw, pval=0, cover_all=False, dy=1, dx=1,
+           out_h=None, out_w=None):
+    xp = backend.get_array_module(img)
+
     n, c, h, w = img.shape
     if out_h is None:
         out_h = get_conv_outsize(h, kh, sy, ph, cover_all, dy)
@@ -76,59 +77,12 @@ def im2col_cpu(
     img = numpy.pad(img,
                     ((0, 0), (0, 0), (ph, ph + sy - 1), (pw, pw + sx - 1)),
                     mode='constant', constant_values=(pval,))
-    col = numpy.ndarray((n, c, kh, kw, out_h, out_w), dtype=img.dtype)
 
-    for j in six.moves.range(kh):
-        jdy = j * dy
-        j_lim = jdy + sy * out_h
-        for i in six.moves.range(kw):
-            idx = i * dx
-            i_lim = idx + sx * out_w
-            col[:, :, j, i, :, :] = img[:, :, jdy:j_lim:sy, idx:i_lim:sx]
+    strides = img.strides
+    col = xp.lib.stride_tricks.as_strided(img, (n, c, kh, kw, out_h, out_w), (
+        strides[0], strides[1], strides[2], strides[3], strides[2] * sy, strides[3] * sx))
 
     return col
-
-
-def im2col_gpu(img, kh, kw, sy, sx, ph, pw, cover_all=False, dy=1, dx=1,
-               out_h=None, out_w=None):
-    n, c, h, w = img.shape
-    if out_h is None:
-        out_h = get_conv_outsize(h, kh, sy, ph, cover_all, dy)
-    assert out_h > 0, 'Height in the output should be positive.'
-    if out_w is None:
-        out_w = get_conv_outsize(w, kw, sx, pw, cover_all, dx)
-    assert out_w > 0, 'Width in the output should be positive.'
-
-    col = cuda.cupy.empty((n, c, kh, kw, out_h, out_w), dtype=img.dtype)
-    cuda.elementwise(
-        'raw T img, int32 h, int32 w, int32 out_h, int32 out_w,'
-        'int32 kh, int32 kw, int32 sy, int32 sx, int32 ph, int32 pw,'
-        'int32 dy, int32 dx',
-        'T col',
-        '''
-           int c0 = i / (kh * kw * out_h * out_w);
-           int ky = i / (kw * out_h * out_w) % kh;
-           int kx = i / (out_h * out_w) % kw;
-           int out_y = i / out_w % out_h;
-           int out_x = i % out_w;
-           int in_y = ky * dy + out_y * sy - ph;
-           int in_x = kx * dx + out_x * sx - pw;
-           if (in_y >= 0 && in_y < h && in_x >= 0 && in_x < w) {
-             col = img[in_x + w * (in_y + h * c0)];
-           } else {
-             col = 0;
-           }
-        ''',
-        'im2col')(img.reduced_view(),
-                  h, w, out_h, out_w, kh, kw, sy, sx, ph, pw, dy, dx, col)
-    return col
-
-
-def im2col(img, kh, kw, sy, sx, ph, pw, cover_all=False, dy=1, dx=1,
-           out_h=None, out_w=None):
-    fn = im2col_gpu if isinstance(img, cuda.ndarray) else im2col_cpu
-    return fn(img, kh, kw, sy, sx, ph, pw, cover_all=cover_all, dy=dy, dx=dx,
-              out_h=out_h, out_w=out_w)
 
 
 def col2im_cpu(col, sy, sx, ph, pw, h, w, dy=1, dx=1):

@@ -163,7 +163,7 @@ class Convolution2DFunction(function_node.FunctionNode):
             return self._forward_ideep(x, W, b)
 
         kh, kw = W.shape[2:]
-        col = conv.im2col_cpu(
+        col = conv.im2col(
             x, kh, kw, self.sy, self.sx, self.ph, self.pw,
             cover_all=self.cover_all, dy=self.dy, dx=self.dx)
         y = numpy.tensordot(
@@ -239,7 +239,7 @@ class Convolution2DFunction(function_node.FunctionNode):
     def _forward_gpu_core(self, x, W, b):
         kh, kw = W.shape[2:]
         # Implementation using im2col
-        col = conv.im2col_gpu(
+        col = conv.im2col(
             x, kh, kw, self.sy, self.sx, self.ph, self.pw,
             cover_all=self.cover_all, dy=self.dy, dx=self.dx)
         y = cuda.cupy.tensordot(
@@ -374,7 +374,7 @@ class Convolution2DGradW(function_node.FunctionNode):
                 1 in gy.shape):
             gy = numpy.ascontiguousarray(gy)
 
-        col = conv.im2col_cpu(
+        col = conv.im2col(
             x, self.kh, self.kw, self.sy, self.sx, self.ph, self.pw,
             cover_all=self.cover_all, dy=self.dy, dx=self.dx)
         gW = numpy.tensordot(gy, col, ((0, 2, 3), (0, 4, 5))
@@ -428,7 +428,7 @@ class Convolution2DGradW(function_node.FunctionNode):
             return self._forward_gpu_core(x, gy)
 
     def _forward_gpu_core(self, x, gy):
-        col = conv.im2col_gpu(
+        col = conv.im2col(
             x, self.kh, self.kw, self.sy, self.sx, self.ph, self.pw,
             cover_all=self.cover_all, dy=self.dy, dx=self.dx)
         gW = cuda.cupy.tensordot(gy, col, ((0, 2, 3), (0, 4, 5))

@@ -116,12 +116,7 @@ class Unpooling2DGrad(function_node.FunctionNode):
     def forward(self, gy):
         if self._use_int_scale_forward:
             return self._integer_scale_forward(gy[0])
-        if isinstance(gy[0], cuda.ndarray):
-            gcol = conv.im2col_gpu(
-                gy[0], self.kh, self.kw, self.sy, self.sx, self.ph, self.pw,
-                cover_all=self.cover_all)
-        else:
-            gcol = conv.im2col_cpu(
+        gcol = conv.im2col(
                 gy[0], self.kh, self.kw, self.sy, self.sx, self.ph, self.pw,
                 cover_all=self.cover_all)
         gx = gcol.sum(axis=(2, 3))

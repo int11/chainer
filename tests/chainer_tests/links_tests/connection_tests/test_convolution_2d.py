@@ -142,13 +142,13 @@ class TestConvolution2DIm2ColConsistency(unittest.TestCase):
 
     @attr.gpu
     def test_im2col_consistency(self):
-        col_cpu = conv.im2col_cpu(self.x, 3, 3, 2, 2, 1, 1)
-        col_gpu = conv.im2col_gpu(cuda.to_gpu(self.x), 3, 3, 2, 2, 1, 1)
+        col_cpu = conv.im2col(self.x, 3, 3, 2, 2, 1, 1)
+        col_gpu = conv.im2col(cuda.to_gpu(self.x), 3, 3, 2, 2, 1, 1)
         testing.assert_allclose(col_cpu, col_gpu.get(), atol=0, rtol=0)
 
     @attr.gpu
     def test_col2im_consistency(self):
-        col = conv.im2col_cpu(self.x, 3, 3, 2, 2, 1, 1)
+        col = conv.im2col(self.x, 3, 3, 2, 2, 1, 1)
         h, w = self.x.shape[2:]
         im_cpu = conv.col2im_cpu(col, 2, 2, 1, 1, h, w)
         im_gpu = conv.col2im_gpu(cuda.to_gpu(col), 2, 2, 1, 1, h, w)

@@ -3,8 +3,7 @@ import numpy
 from chainer import function_node
 from chainer.utils.conv import col2im_cpu
 from chainer.utils.conv import col2im_gpu
-from chainer.utils.conv import im2col_cpu
-from chainer.utils.conv import im2col_gpu
+from chainer.utils.conv import im2col
 from chainer.utils import type_check
 
 
@@ -20,10 +19,6 @@ def _col2im(x, *args, **kwargs):
     return col2im_gpu(x, *args, **kwargs)
 
 
-def _im2col(x, *args, **kwargs):
-    if isinstance(x, numpy.ndarray):
-        return im2col_cpu(x, *args, **kwargs)
-    return im2col_gpu(x, *args, **kwargs)
 
 
 class Im2Col(function_node.FunctionNode):
@@ -48,7 +43,7 @@ class Im2Col(function_node.FunctionNode):
 
     def forward(self, inputs):
         x, = inputs
-        y = _im2col(
+        y = im2col(
             x, self.kh, self.kw, self.sy, self.sx, self.ph, self.pw,
             cover_all=self.cover_all, dy=self.dy, dx=self.dx)
         n, c, kh, kw, out_h, out_w = y.shape
